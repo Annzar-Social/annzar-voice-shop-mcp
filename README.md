@@ -2,42 +2,53 @@
 
 **Amazon Developer Hackathon 2026 — Alexa+ track**
 
-An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets an AI assistant (Alexa+) run a small digital shop by voice. Sellers can check revenue, search products, create listings, draft social posts, and share checkout links — all through natural speech.
+An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that lets an AI assistant run a small digital shop by voice. Sellers can check revenue, find products, create listings, draft social posts, and get checkout links — entirely through natural speech.
+
+---
+
+## SDK and protocol version (verified)
+
+| Item | Value |
+|---|---|
+| Package | `@modelcontextprotocol/sdk@1.32.1` |
+| MCP spec | **2025-11-25** |
+| Transport | Streamable HTTP |
+
+**Proof** — exact lines from the installed SDK source:
+
+```
+node_modules/@modelcontextprotocol/sdk/dist/esm/types.js
+  line 2: export const LATEST_PROTOCOL_VERSION = '2025-11-25';
+  line 4: export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, '2025-06-18', '2025-03-26', '2024-11-05', '2024-10-07'];
+```
+
+`2025-11-25` is both `LATEST_PROTOCOL_VERSION` and present in `SUPPORTED_PROTOCOL_VERSIONS`. Verified by reading the file directly, not by trusting documentation.
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  Alexa+ / AI Client                                          │
-│  (or any MCP host: Claude, VS Code, MCP Inspector)           │
-└─────────────────────────┬────────────────────────────────────┘
-                          │  Streamable HTTP  (POST/GET /mcp)
-                          │  Authorization: Bearer <MCP_API_KEY>
-┌─────────────────────────▼────────────────────────────────────┐
-│  Express HTTP Server  (src/server.ts)                        │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │  McpServer  (@modelcontextprotocol/sdk v1.x)          │    │
-│  │  Spec: MCP 2025-11-25                                 │    │
-│  │                                                       │    │
-│  │  Tools:                                               │    │
-│  │    get_shop_summary   search_products                 │    │
-│  │    create_product     draft_post                      │    │
-│  │    get_checkout_link  get_context                     │    │
-│  └──────────────┬──────────────────────────┬────────────┘    │
-│                 │                          │                  │
-│  ┌──────────────▼──────────┐  ┌────────────▼─────────────┐  │
-│  │  ShopAdapter (interface) │  │  MemoryStore (interface)  │  │
-│  │  ┌───────────────────┐  │  │  ┌─────────────────────┐  │  │
-│  │  │ MockShopAdapter   │  │  │  │ SqliteMemoryStore   │  │  │
-│  │  │ (demo data)       │  │  │  │ (better-sqlite3)    │  │  │
-│  │  ├───────────────────┤  │  │  ├─────────────────────┤  │  │
-│  │  │ AnnzarShopAdapter │  │  │  │ InMemoryStore       │  │  │
-│  │  │ (stub — todo)     │  │  │  │ (tests)             │  │  │
-│  │  └───────────────────┘  │  │  └─────────────────────┘  │  │
-│  └─────────────────────────┘  └──────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│  Alexa+ / any MCP host (Claude, VS Code, MCP Inspector)       │
+└──────────────────────────┬────────────────────────────────────┘
+                           │  Streamable HTTP  POST/GET /mcp
+                           │  Authorization: Bearer <MCP_API_KEY>
+┌──────────────────────────▼────────────────────────────────────┐
+│  Express server  (src/server.ts)                              │
+│  ┌─────────────────────────────────────────────────────────┐  │
+│  │  McpServer  (SDK 1.32.1, spec 2025-11-25)               │  │
+│  │  Tools: get_shop_summary · search_products              │  │
+│  │          create_product  · draft_post                   │  │
+│  │          get_checkout_link · get_context                │  │
+│  └──────────────┬───────────────────────┬─────────────────┘  │
+│                 │                       │                     │
+│  ┌──────────────▼───────────┐ ┌─────────▼──────────────────┐ │
+│  │ ShopAdapter (interface)  │ │ MemoryStore (interface)     │ │
+│  │  MockShopAdapter ✅      │ │  JsonFileMemoryStore ✅     │ │
+│  │  AnnzarShopAdapter stub  │ │  InMemoryStore (tests)     │ │
+│  └──────────────────────────┘ └────────────────────────────┘ │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -45,162 +56,124 @@ An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that l
 ## Setup
 
 ```bash
-# 1. Clone
 git clone https://github.com/Annzar-Social/annzar-voice-shop-mcp.git
 cd annzar-voice-shop-mcp
-
-# 2. Install
-npm install
-
-# 3. Configure
-cp .env.example .env
-# Edit .env — set MCP_API_KEY to any strong random string
-
-# 4. Run (development, auto-reload)
-npm run dev
-
-# 5. Run (production)
-npm run build && npm start
+npm ci
+cp .env.example .env        # edit: set MCP_API_KEY
+npm run build               # tsc → dist/
+npm start                   # node dist/server.js
 ```
 
 ---
 
 ## Environment variables
 
-| Variable       | Required | Default  | Description                                                   |
-|----------------|----------|----------|---------------------------------------------------------------|
-| `MCP_API_KEY`  | ✅ yes   | —        | Bearer token required on every `/mcp` request                 |
-| `SHOP_ADAPTER` | no       | `mock`   | `mock` (demo data) or `annzar` (real platform — stub today)   |
-| `PORT`         | no       | `3000`   | HTTP port                                                     |
+| Variable       | Required | Default              | Description                                        |
+|----------------|----------|----------------------|----------------------------------------------------|
+| `MCP_API_KEY`  | ✅ yes   | —                    | Bearer token for `/mcp` — never commit a real value |
+| `SHOP_ADAPTER` | no       | `mock`               | `mock` (demo data) or `annzar` (stub)              |
+| `PORT`         | no       | `3000`               | HTTP port (Render sets this automatically)         |
+| `MEMORY_PATH`  | no       | `./data/memory.json` | JSON memory file path (`/tmp/...` for Render)      |
 
 ---
 
-## Running
+## Scripts
 
 ```bash
-# Development (hot-reload via tsx watch)
-npm run dev
+npm run build       # tsc — Render build command
+npm start           # node dist/server.js — Render start command
+npm run dev         # tsx watch (hot-reload for development)
+npm test            # unit tests (28 tests, no server needed)
+npm run test:integration  # integration tests against real server
+npm run test:all    # both test suites
+npm run typecheck   # tsc --noEmit (may be slow locally — see FRICTION_LOG)
+npm run inspect     # prints MCP Inspector command
+```
 
-# Check the server is alive
-curl http://localhost:3000/health
+---
 
-# List all tools (replace <key> with your MCP_API_KEY)
-curl -s -X POST http://localhost:3000/mcp \
-  -H "Authorization: Bearer <key>" \
+## Tools
+
+| Tool | Description |
+|---|---|
+| `get_shop_summary` | Revenue, orders, top product, period-over-period comparison |
+| `search_products` | Full-text + max_price + category filters |
+| `create_product` | `confirm:false` = preview, `confirm:true` = save |
+| `draft_post` | Promotional caption for `pulse` or `flow` — **does not post** |
+| `get_checkout_link` | Purchase URL for a product |
+| `get_context` | What the assistant remembers about this seller |
+
+### Example calls
+
+```bash
+KEY=your-key
+PORT=3000
+
+# Health (no auth)
+curl http://localhost:$PORT/health
+
+# Initialize
+curl -s -X POST http://localhost:$PORT/mcp \
+  -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}' | jq .
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"0"}},"id":1}'
+
+# List tools
+curl -s -X POST http://localhost:$PORT/mcp \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}'
+
+# Call get_shop_summary
+curl -s -X POST http://localhost:$PORT/mcp \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"get_shop_summary","arguments":{"period":"week"}},"id":3}'
 ```
 
 ---
 
-## Tests
+## Deploy to Render
+
+### Steps
+
+1. Fork or push this repo to your GitHub account.
+2. Go to [render.com](https://render.com) → **New** → **Web Service**.
+3. Connect your GitHub repo.
+4. Render auto-detects `render.yaml` — review the settings:
+   - **Build Command:** `npm ci && npm run build`
+   - **Start Command:** `npm start`
+   - **Health Check Path:** `/health`
+   - **Node version:** `20.18.0` (set via `NODE_VERSION` env var)
+5. Under **Environment Variables**, set:
+   - `MCP_API_KEY` → a strong random string (e.g. `openssl rand -hex 32`)
+   - `SHOP_ADAPTER` → `mock` (for demo) or `annzar` (when real adapter is ready)
+   - `MEMORY_PATH` is pre-set to `/tmp/memory.json` in `render.yaml` — leave it.
+6. Click **Deploy**. Watch the build log for the startup banner showing adapter and MCP spec version.
+7. Test the deployed service:
 
 ```bash
-npm test
-# Runs vitest across src/tests/ — covers all 6 tools, both adapters, memory store, and auth logic
+# Health check (no token)
+curl https://<your-service>.onrender.com/health
+
+# MCP call (with your key)
+curl -s -X POST https://<your-service>.onrender.com/mcp \
+  -H "Authorization: Bearer <your-MCP_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":1}'
 ```
 
----
-
-## MCP Inspector
-
-```bash
-npm run inspect
-# Prints the exact commands to open the MCP Inspector UI
-```
-
-Then run:
-```bash
-npx @modelcontextprotocol/inspector http://localhost:3000/mcp \
-  --header "Authorization: Bearer <your-MCP_API_KEY>"
-```
-
----
-
-## Tool reference
-
-### `get_shop_summary`
-Returns revenue, orders, top product, and period-over-period comparison.
-
-```json
-{ "period": "week" }
-```
-→
-```json
-{
-  "period": "week",
-  "revenue_usd": 487,
-  "orders": 15,
-  "top_product": "Minimal UI Kit",
-  "revenue_change": "+23%",
-  "orders_change": "+15%",
-  "summary_text": "In the week, you made $487 across 15 orders..."
-}
-```
-
----
-
-### `search_products`
-Full-text + optional filter search across the catalog.
-
-```json
-{ "query": "design", "max_price": 30, "category": "Design" }
-```
-
----
-
-### `create_product`
-Confirm gate — `confirm: false` returns a preview, `confirm: true` saves.
-
-```json
-{ "name": "Icon Set v2", "price": 19, "description": "500 icons", "category": "Design", "confirm": false }
-```
-
----
-
-### `draft_post`
-Generates a promotional caption. **Does NOT post anywhere.**
-
-```json
-{ "product_id": "prod_001", "platform": "pulse" }
-```
-
----
-
-### `get_checkout_link`
-Returns a purchase URL for the product.
-
-```json
-{ "product_id": "prod_001" }
-```
-
----
-
-### `get_context`
-Returns session memory (last action, last product, language/tone preference, recent queries).
-
-```json
-{}
-```
-
----
-
-## SDK and spec versions
-
-| Item                | Value                                    |
-|---------------------|------------------------------------------|
-| SDK package         | `@modelcontextprotocol/sdk`              |
-| SDK version         | `^1.12.0` (v1 maintenance line)          |
-| MCP spec            | `2025-11-25`                             |
-| Transport           | Streamable HTTP (`StreamableHTTPServerTransport`) |
-| Verification        | SDK v1.x docs at ts.sdk.modelcontextprotocol.io explicitly state it implements the 2025-11-25 spec; search results confirm `1.29.x` as the latest v1 release at hackathon time. |
+> **Note:** Render free tier has ephemeral disk — `MEMORY_PATH=/tmp/memory.json` means seller context resets on each deploy or restart. This is fine for demo purposes; use a paid plan with a persistent disk for production.
 
 ---
 
 ## Adapter extension guide
 
-To connect real Annzar endpoints, implement each method in `src/adapters/AnnzarShopAdapter.ts`.
-Set `SHOP_ADAPTER=annzar` in `.env`. No other changes are needed — the MCP tools are adapter-agnostic.
+To connect real Annzar endpoints, implement each method in `src/adapters/AnnzarShopAdapter.ts` and set `SHOP_ADAPTER=annzar`. The MCP tools are adapter-agnostic — no other changes needed.
 
 ---
 
