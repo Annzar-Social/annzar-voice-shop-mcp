@@ -103,6 +103,10 @@ npm run inspect     # prints MCP Inspector command
 | `get_checkout_link` | Purchase URL for a product |
 | `get_context` | What the assistant remembers about this seller |
 
+## Try the demo
+
+Open the [Voice Shop Assistant simulator](https://annzar-voice-shop-mcp.onrender.com/demo) on a phone or desktop. Speak with the microphone in a browser that supports the Web Speech API, or type a request instead. The simulator uses mock shop data and can summarize sales, search products, create a demo product, draft a promotional post, retrieve a checkout link, and show remembered context. It does not publish posts or place orders.
+
 ### Example calls
 
 ```bash

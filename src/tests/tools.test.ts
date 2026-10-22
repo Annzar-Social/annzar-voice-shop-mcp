@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { MockShopAdapter }   from '../adapters/MockShopAdapter.js'
 import { AnnzarShopAdapter } from '../adapters/AnnzarShopAdapter.js'
 import { InMemoryStore }     from '../memory/InMemoryStore.js'
+import { createDemoRateLimiter, parseDemoIntent } from '../demo.js'
 
 describe('MockShopAdapter', () => {
   let adapter: MockShopAdapter
@@ -109,4 +110,36 @@ describe('Auth logic (unit)', () => {
   it('rejects missing header',    () => expect(check('k',undefined)).toBe(false))
   it('rejects non-bearer scheme', () => expect(check('k','Basic k')).toBe(false))
   it('rejects unconfigured key',  () => expect(check('','Bearer x')).toBe(false))
+})
+
+describe('Demo intent parsing', () => {
+  it('selects a today or week summary', () => {
+    expect(parseDemoIntent('how did my shop do today')).toEqual({ tool: 'get_shop_summary', arguments: { period: 'today' } })
+    expect(parseDemoIntent('sales')).toEqual({ tool: 'get_shop_summary', arguments: { period: 'week' } })
+  })
+  it('extracts product search and optional maximum price', () => {
+    expect(parseDemoIntent('find products under $10')).toEqual({ tool: 'search_products', arguments: { query: 'a', max_price: 10 } })
+  })
+  it('extracts a product name and price', () => {
+    expect(parseDemoIntent('create product Social Media Pack for $9')).toEqual({ tool: 'create_product', arguments: { name: 'Social Media Pack', price: 9 } })
+  })
+  it('recognizes post, checkout and context requests and gives help otherwise', () => {
+    expect(parseDemoIntent('write a post for it').tool).toBe('draft_post')
+    expect(parseDemoIntent('give me the checkout link').tool).toBe('get_checkout_link')
+    expect(parseDemoIntent('what do you remember').tool).toBe('get_context')
+    expect(parseDemoIntent('hello').tool).toBe('help')
+  })
+})
+
+describe('Demo rate limit', () => {
+  it('allows 20 requests and rejects the 21st request from one IP in a minute', () => {
+    const limiter = createDemoRateLimiter()
+    let passed = 0
+    let rejected = 0
+    const req = { ip: '192.0.2.1', socket: { remoteAddress: '192.0.2.1' } } as any
+    const res = { setHeader: () => undefined, status(code: number) { if (code === 429) rejected++; return this }, json: () => undefined } as any
+    for (let i = 0; i < 21; i++) limiter(req, res, () => { passed++ })
+    expect(passed).toBe(20)
+    expect(rejected).toBe(1)
+  })
 })

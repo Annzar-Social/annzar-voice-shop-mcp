@@ -74,6 +74,7 @@ export class MockShopAdapter implements ShopAdapter {
   }
 
   async createProduct(name: string, price: number, description: string, category: string, confirm: boolean): Promise<{ product: Product; persisted: boolean }> {
+    if (confirm && productStore.length >= 100) throw new Error('Mock shop product limit reached (100).')
     const product: Product = { id: `prod_${String(nextId++).padStart(3, '0')}`, name, price, description, category, createdAt: new Date().toISOString() }
     if (confirm) productStore.push(product)
     return { product, persisted: confirm }
