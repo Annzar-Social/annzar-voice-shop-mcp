@@ -120,3 +120,55 @@ line 4: export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, '20
 - Severity: Low
 - Workaround used: Used the plain `tsc` build (`npm run build`) as the verification step for correctness; `typecheck` is kept as an optional script in `package.json` but is not part of the CI or Render build
 - Suggestion: None identified — this appears to be environment-specific (deep `node_modules` type traversal with SDK 1.32.1 on Windows/Node 26); reported for completeness
+
+---
+
+### Kiro remote MCP server reports an unexplained connection failure
+
+- Date: Oct 22, 2026
+- Task attempted: Add the deployed remote Streamable HTTP MCP server to the user-level `~/.kiro/settings/mcp.json` with an Authorization Bearer header
+- Steps taken: Configured the remote MCP URL and Bearer header; separately sent a request to the same URL with the same key using curl
+- Expected result: Kiro connects successfully and lists the remote MCP tools
+- Actual result: curl returned HTTP 200, but Kiro's MCP Servers panel displayed "Connection Failed" without a reason
+- Severity: Medium
+- Workaround used: No cause was available in the panel; the configuration and endpoint were checked independently with curl
+- Suggestion: Show the connection failure cause in the MCP Servers panel
+
+---
+
+### Kiro agent could not write user-level MCP settings
+
+- Date: Oct 22, 2026
+- Task attempted: Have the Kiro agent create `~/.kiro/settings/mcp.json`
+- Steps taken: Asked the agent to write the user-level MCP configuration file
+- Expected result: The agent writes the configuration to the settings directory
+- Actual result: Kiro's permission rules blocked writes to `~/.kiro/settings`
+- Severity: Low
+- Workaround used: Created the configuration file manually
+- Suggestion: Allow a user-authorized agent write to the MCP settings directory, or provide a guided configuration flow
+
+---
+
+### Shell terminal emitted stray control sequences during initial branch command
+
+- Date: Oct 22, 2026
+- Task attempted: Create the feature branch from `origin/main` and display its status
+- Steps taken: Ran the git commands in a compound shell command
+- Expected result: The compound command runs without unrelated shell input
+- Actual result: The terminal session supplied stray control-sequence text that the shell interpreted as commands, returning exit code 127
+- Severity: Low
+- Workaround used: Re-sourced the shell environment and reran the branch command; `feat/demo-ui` was created successfully from `origin/main`
+- Suggestion: Ensure terminal session initialization does not inject terminal control sequences into submitted commands
+
+---
+
+### Reconnecting the demo client for every command crashed the MCP server
+
+- Date: Oct 22, 2026
+- Task attempted: Exercise consecutive voice-simulator commands through the SDK Streamable HTTP client
+- Steps taken: Created and closed a new official MCP client/transport for each public command request
+- Expected result: Each request establishes an independent MCP session and returns a tool result
+- Actual result: The first command succeeded; on the next connection, the server reported "Already connected to a transport" and the process exited
+- Severity: Medium
+- Workaround used: Create a dedicated McpServer instance for each Streamable HTTP session, while preserving the shared shop adapter and memory store
+- Suggestion: Document the single-transport lifecycle behavior of the configured McpServer pattern or expose a supported multi-session server pattern
