@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: annzar-voice-shop-mcp
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20.18.0"        # Node 20 LTS (Iron)
+      - key: MCP_API_KEY
+        sync: false             # Set in Render dashboard — never commit real value
+      - key: SHOP_ADAPTER
+        sync: false             # "mock" for demo; "annzar" when real adapter is wired
+      - key: MEMORY_PATH
+        value: /tmp/memory.json # Render free tier has ephemeral disk; /tmp is always writable
