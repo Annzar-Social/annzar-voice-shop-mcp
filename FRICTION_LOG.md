@@ -172,3 +172,16 @@ line 4: export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, '20
 - Severity: Medium
 - Workaround used: Create a dedicated McpServer instance for each Streamable HTTP session, while preserving the shared shop adapter and memory store
 - Suggestion: Document the single-transport lifecycle behavior of the configured McpServer pattern or expose a supported multi-session server pattern
+
+---
+
+### Generic product search was parsed as the letter "a"
+
+- Date: Oct 22, 2026
+- Task attempted: POST `find products under $10` to `/api/demo/command`
+- Steps taken: Sent the sentence through the local demo HTTP endpoint and inspected the JSON tool result
+- Expected result: Search the catalog for any products priced below $10
+- Actual result: The intent parser called `search_products` with query `a`, and the mock catalog returned zero matches
+- Severity: Medium
+- Workaround used: Updated generic searches to use an empty keyword and expanded the mock catalog with low-priced products
+- Suggestion: Keep parser examples and mock catalog coverage for generic product searches in the automated tests

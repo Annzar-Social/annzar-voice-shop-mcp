@@ -35,6 +35,19 @@ describe('MockShopAdapter', () => {
       const r = await adapter.searchProducts('', 20)
       r.forEach(p => expect(p.price).toBeLessThanOrEqual(20))
     })
+    it('has at least four under-$10 products across varied categories', async () => {
+      const r = await adapter.searchProducts('', 10)
+      expect(r.length).toBeGreaterThanOrEqual(4)
+      expect(new Set(r.map(p => p.category)).size).toBeGreaterThanOrEqual(4)
+    })
+    it('matches all terms in a multi-word query', async () => {
+      expect(await adapter.searchProducts('design templates')).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: 'prod_004' }),
+      ]))
+      expect(await adapter.searchProducts('ui kits')).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: 'prod_013' }),
+      ]))
+    })
     it('filters by category case-insensitive', async () => {
       const r = await adapter.searchProducts('', undefined, 'design')
       r.forEach(p => expect(p.category.toLowerCase()).toBe('design'))
@@ -62,7 +75,8 @@ describe('MockShopAdapter', () => {
     it('pulse caption returned', async () => {
       const d = await adapter.draftPost('prod_001', 'pulse')
       expect(d.platform).toBe('pulse')
-      expect(d.caption.length).toBeGreaterThan(10)
+      expect(d.caption).toBe('New drop: Minimal UI Kit. Clean Figma component library with 200+ components. Only $29. #Design')
+      expect(d.caption.match(/Minimal UI Kit/g)).toHaveLength(1)
     })
     it('throws for unknown product', async () => {
       await expect(adapter.draftPost('bad', 'pulse')).rejects.toThrow()
@@ -73,7 +87,7 @@ describe('MockShopAdapter', () => {
     it('URL contains product ID', async () => {
       const l = await adapter.getCheckoutLink('prod_001')
       expect(l.url).toContain('prod_001')
-      expect(l.url).toMatch(/^https?:\/\//)
+      expect(l.url).toBe('https://annzar.com/demo-checkout/prod_001?utm_source=voice&utm_medium=mcp')
     })
     it('throws for unknown product', async () => {
       await expect(adapter.getCheckoutLink('bad')).rejects.toThrow()
@@ -117,8 +131,17 @@ describe('Demo intent parsing', () => {
     expect(parseDemoIntent('how did my shop do today')).toEqual({ tool: 'get_shop_summary', arguments: { period: 'today' } })
     expect(parseDemoIntent('sales')).toEqual({ tool: 'get_shop_summary', arguments: { period: 'week' } })
   })
-  it('extracts product search and optional maximum price', () => {
-    expect(parseDemoIntent('find products under $10')).toEqual({ tool: 'search_products', arguments: { query: 'a', max_price: 10 } })
+  it('searches all products under a price when there is no keyword', () => {
+    expect(parseDemoIntent('find products under $10')).toEqual({ tool: 'search_products', arguments: { query: '', max_price: 10 } })
+  })
+  it('extracts a multi-word query and price limit', () => {
+    expect(parseDemoIntent('find design templates under $20')).toEqual({ tool: 'search_products', arguments: { query: 'design templates', max_price: 20 } })
+  })
+  it('extracts a multi-word query after search for', () => {
+    expect(parseDemoIntent('search for ui kits')).toEqual({ tool: 'search_products', arguments: { query: 'ui kits' } })
+  })
+  it('searches all products when asked to show products', () => {
+    expect(parseDemoIntent('show me products')).toEqual({ tool: 'search_products', arguments: { query: '' } })
   })
   it('extracts a product name and price', () => {
     expect(parseDemoIntent('create product Social Media Pack for $9')).toEqual({ tool: 'create_product', arguments: { name: 'Social Media Pack', price: 9 } })

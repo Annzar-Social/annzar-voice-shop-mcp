@@ -20,9 +20,16 @@ export function parseDemoIntent(sentence: string): DemoIntent {
   if (create) return { tool: 'create_product', arguments: { name: create[1].trim(), price: Number(create[2]) } }
   if (/\b(post|write\s+a\s+post)\b/.test(lower)) return { tool: 'draft_post' }
   if (/\b(checkout|link)\b/.test(lower)) return { tool: 'get_checkout_link' }
-  if (/\b(find|search)\b/.test(lower)) {
+  if (/\b(find|search|show)\b/.test(lower)) {
     const priceMatch = lower.match(/\bunder\s+\$\s*(\d+(?:\.\d{1,2})?)/)
-    const query = text.replace(/^\s*(?:find|search)\s+(?:for\s+)?/i, '').replace(/\s+under\s+\$\s*\d+(?:\.\d{1,2})?/i, '').replace(/[?.!]+$/, '').trim().replace(/^products?$/i, '') || 'a'
+    const query = text
+      .replace(/^\s*(?:find|search)\s+(?:for\s+)?/i, '')
+      .replace(/^\s*show\s+(?:me\s+)?/i, '')
+      .replace(/\s+under\s+\$\s*\d+(?:\.\d{1,2})?/i, '')
+      .replace(/[?.!]+$/, '')
+      .replace(/\bproducts?\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim()
     return { tool: 'search_products', arguments: { query, ...(priceMatch ? { max_price: Number(priceMatch[1]) } : {}) } }
   }
   return { tool: 'help' }

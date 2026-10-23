@@ -83,9 +83,9 @@ npm start                   # node dist/server.js
 npm run build       # tsc — Render build command
 npm start           # node dist/server.js — Render start command
 npm run dev         # tsx watch (hot-reload for development)
-npm test            # unit tests (28 tests, no server needed)
-npm run test:integration  # integration tests against real server
-npm run test:all    # both test suites
+npm test            # unit tests (37 tests, no server needed)
+npm run test:integration  # integration tests against real server (7 tests)
+npm run test:all    # both test suites (44 tests)
 npm run typecheck   # tsc --noEmit (may be slow locally — see FRICTION_LOG)
 npm run inspect     # prints MCP Inspector command
 ```
@@ -105,7 +105,7 @@ npm run inspect     # prints MCP Inspector command
 
 ## Try the demo
 
-Open the [Voice Shop Assistant simulator](https://annzar-voice-shop-mcp.onrender.com/demo) on a phone or desktop. Speak with the microphone in a browser that supports the Web Speech API, or type a request instead. The simulator uses mock shop data and can summarize sales, search products, create a demo product, draft a promotional post, retrieve a checkout link, and show remembered context. It does not publish posts or place orders.
+Open the [Voice Shop Assistant simulator](https://annzar-voice-shop-mcp.onrender.com/demo) on a phone or desktop. Speak with the microphone in a browser that supports the Web Speech API, or type a request instead. The simulator uses mock shop data and can summarize sales, search products, create a demo product, draft a promotional post, retrieve a checkout link, and show remembered context. Checkout links use the `/demo-checkout/` path and are labeled “Demo link (mock shop)”; they are not a real checkout and do not process orders. The simulator does not publish posts or place orders.
 
 ### Example calls
 

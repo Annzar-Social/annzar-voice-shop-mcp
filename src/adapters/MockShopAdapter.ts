@@ -11,6 +11,10 @@ const PRODUCTS: Product[] = [
   { id: 'prod_008', name: 'Motion Graphics Pack',   price: 59, description: 'After Effects + Lottie animations for social media stories.',   category: 'Video',     createdAt: '2026-09-22T13:00:00Z' },
   { id: 'prod_009', name: 'SEO Content Templates',  price: 18, description: '25 ready-to-fill blog and landing-page content frameworks.',    category: 'Templates', createdAt: '2026-09-25T09:00:00Z' },
   { id: 'prod_010', name: 'Icon Set — 1000 Icons',  price: 24, description: 'SVG and PNG icon set covering tech, food, travel, and more.',   category: 'Design',    createdAt: '2026-09-28T11:00:00Z' },
+  { id: 'prod_011', name: 'Mini Icon Pack',           price: 4.99, description: 'A compact set of vector icons for quick mockups.',             category: 'Design',    createdAt: '2026-10-01T10:00:00Z' },
+  { id: 'prod_012', name: 'Social Caption Templates', price: 7.50, description: 'Short caption templates for product launches and updates.',    category: 'Templates', createdAt: '2026-10-02T10:00:00Z' },
+  { id: 'prod_013', name: 'Starter UI Kits',          price: 8.00, description: 'Reusable UI kit components for simple web prototypes.',       category: 'Code',      createdAt: '2026-10-03T10:00:00Z' },
+  { id: 'prod_014', name: 'Video Story Pack',         price: 6.50, description: 'Editable video story templates for social media.',            category: 'Video',     createdAt: '2026-10-04T10:00:00Z' },
 ]
 
 const NOW_MS   = Date.now()
@@ -48,7 +52,7 @@ const SALES = [
 ]
 
 const productStore: Product[] = [...PRODUCTS]
-let nextId = 11
+let nextId = 15
 
 export class MockShopAdapter implements ShopAdapter {
   async getShopSummary(period: 'today' | 'week'): Promise<ShopSummary> {
@@ -66,10 +70,11 @@ export class MockShopAdapter implements ShopAdapter {
   }
 
   async searchProducts(query: string, maxPrice?: number, category?: string): Promise<Product[]> {
-    const q = query.toLowerCase()
+    const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean)
     return productStore.filter(p => {
-      const txt = p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
-      return txt && (maxPrice == null || p.price <= maxPrice) && (category == null || p.category.toLowerCase() === category.toLowerCase())
+      const txt = `${p.name} ${p.description} ${p.category}`.toLowerCase()
+      const matchesQuery = terms.every(term => txt.includes(term) || (term.endsWith('s') && txt.includes(term.slice(0, -1))))
+      return matchesQuery && (maxPrice == null || p.price <= maxPrice) && (category == null || p.category.toLowerCase() === category.toLowerCase())
     })
   }
 
@@ -83,8 +88,9 @@ export class MockShopAdapter implements ShopAdapter {
   async draftPost(productId: string, platform: 'pulse' | 'flow'): Promise<DraftPost> {
     const p = productStore.find(x => x.id === productId)
     if (!p) throw new Error(`Product ${productId} not found`)
+    const description = p.description.replace(/[.!?]+$/, '')
     const captions: Record<'pulse' | 'flow', string> = {
-      pulse: `✨ New drop: ${p.name} — ${p.description} Only $${p.price}. 🔥 #${p.category.replace(/\s/g, '')} #Digital`,
+      pulse: `New drop: ${p.name}. ${description}. Only $${p.price}. #${p.category.replace(/\s/g, '')}`,
       flow:  `🛍️ ${p.name}\n\n${p.description}\n\n💰 Just $${p.price}\n\n#${p.category.replace(/\s/g, '')} #Annzar`,
     }
     return { productId, platform, caption: captions[platform] }
@@ -93,6 +99,6 @@ export class MockShopAdapter implements ShopAdapter {
   async getCheckoutLink(productId: string): Promise<CheckoutLink> {
     const p = productStore.find(x => x.id === productId)
     if (!p) throw new Error(`Product ${productId} not found`)
-    return { productId, url: `https://annzar.com/product/${productId}?utm_source=voice&utm_medium=mcp` }
+    return { productId, url: `https://annzar.com/demo-checkout/${productId}?utm_source=voice&utm_medium=mcp` }
   }
 }
