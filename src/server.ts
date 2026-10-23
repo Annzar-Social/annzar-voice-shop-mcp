@@ -17,12 +17,13 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js'
 import { randomUUID } from 'node:crypto'
 
-import { MockShopAdapter }     from './adapters/MockShopAdapter.js'
+import { MockShopAdapter, findMockProduct } from './adapters/MockShopAdapter.js'
 import { AnnzarShopAdapter }   from './adapters/AnnzarShopAdapter.js'
 import { JsonFileMemoryStore } from './memory/JsonFileMemoryStore.js'
 import { registerTools }       from './tools/registerTools.js'
 import { createDemoRateLimiter, parseDemoIntent } from './demo.js'
 import { demoPage } from './demoPage.js'
+import { renderDemoCheckoutPage } from './demoCheckoutPage.js'
 import type { ShopAdapter }    from './adapters/ShopAdapter.js'
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -72,6 +73,12 @@ app.get('/demo', (_req: Request, res: Response) => {
   res.status(200).type('html').send(demoPage)
 })
 
+app.get('/demo-checkout/:id', (req: Request, res: Response) => {
+  const id = req.params.id
+  if (!/^prod_[0-9]{3}$/.test(id)) { res.status(404).type('text').send('Not found'); return }
+  res.status(200).type('html').send(renderDemoCheckoutPage(findMockProduct(id)))
+})
+
 const demoRateLimit = createDemoRateLimiter()
 const demoProducts = new Map<string, string>()
 app.post('/api/demo/command', demoRateLimit, async (req: Request, res: Response) => {
@@ -106,7 +113,7 @@ app.post('/api/demo/command', demoRateLimit, async (req: Request, res: Response)
     if (data?.product?.id) demoProducts.set(sessionId, data.product.id)
     if (data?.products?.[0]?.id) demoProducts.set(sessionId, data.products[0].id)
     while (demoProducts.size > 1000) demoProducts.delete(demoProducts.keys().next().value as string)
-    const reply = data?.summary_text ?? data?.message ?? data?.caption ?? (data?.url ? `Here is your checkout link: ${data.url}` : data?.products ? `I found ${data.count} matching product(s).` : data?.lastAction !== undefined ? 'Here is what I remember about this shop.' : 'Done.')
+    const reply = data?.summary_text ?? data?.message ?? data?.caption ?? (data?.url ? 'Here is your demo checkout link.' : data?.products ? `I found ${data.count} matching product(s).` : data?.lastAction !== undefined ? 'Here is what I remember about this shop.' : 'Done.')
     res.json({ reply, tool, data })
   } catch (error) {
     console.error('Demo MCP request failed:', error instanceof Error ? error.message : 'unknown error')

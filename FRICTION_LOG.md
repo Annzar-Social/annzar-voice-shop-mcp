@@ -185,3 +185,16 @@ line 4: export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, '20
 - Severity: Medium
 - Workaround used: Updated generic searches to use an empty keyword and expanded the mock catalog with low-priced products
 - Suggestion: Keep parser examples and mock catalog coverage for generic product searches in the automated tests
+
+---
+
+### Terminal injected stray control text during branch creation
+
+- Date: Oct 23, 2026
+- Task attempted: Fast-forward `main` and create `fix/demo-checkout-page` from `origin/main`
+- Steps taken: Submitted the compound `git switch`, `git pull`, and `git switch -c` command
+- Expected result: Git commands execute without unrelated shell input
+- Actual result: The terminal supplied `;1R` / `}` control-sequence text, which the shell interpreted and rejected with a syntax error
+- Severity: Low
+- Workaround used: Re-sourced the shell environment and reran the command successfully
+- Suggestion: Prevent terminal control-sequence text from being injected into submitted shell commands

@@ -99,6 +99,11 @@ export class MockShopAdapter implements ShopAdapter {
   async getCheckoutLink(productId: string): Promise<CheckoutLink> {
     const p = productStore.find(x => x.id === productId)
     if (!p) throw new Error(`Product ${productId} not found`)
-    return { productId, url: `https://annzar.com/demo-checkout/${productId}?utm_source=voice&utm_medium=mcp` }
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL?.trim().replace(/\/+$/, '') || 'https://annzar-voice-shop-mcp.onrender.com'
+    return { productId, url: `${publicBaseUrl}/demo-checkout/${productId}?utm_source=voice&utm_medium=mcp` }
   }
+}
+
+export function findMockProduct(productId: string): Product | undefined {
+  return productStore.find(product => product.id === productId)
 }

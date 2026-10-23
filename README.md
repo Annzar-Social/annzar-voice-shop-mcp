@@ -68,12 +68,13 @@ npm start                   # node dist/server.js
 
 ## Environment variables
 
-| Variable       | Required | Default              | Description                                        |
-|----------------|----------|----------------------|----------------------------------------------------|
-| `MCP_API_KEY`  | ✅ yes   | —                    | Bearer token for `/mcp` — never commit a real value |
-| `SHOP_ADAPTER` | no       | `mock`               | `mock` (demo data) or `annzar` (stub)              |
-| `PORT`         | no       | `3000`               | HTTP port (Render sets this automatically)         |
-| `MEMORY_PATH`  | no       | `./data/memory.json` | JSON memory file path (`/tmp/...` for Render)      |
+| Variable          | Required | Default                                                | Description                                        |
+|-------------------|----------|--------------------------------------------------------|----------------------------------------------------|
+| `MCP_API_KEY`     | ✅ yes   | —                                                      | Bearer token for `/mcp` — never commit a real value |
+| `SHOP_ADAPTER`    | no       | `mock`                                                 | `mock` (demo data) or `annzar` (stub)              |
+| `PORT`            | no       | `3000`                                                 | HTTP port (Render sets this automatically)         |
+| `PUBLIC_BASE_URL` | no       | `https://annzar-voice-shop-mcp.onrender.com`           | Public origin for absolute mock checkout URLs      |
+| `MEMORY_PATH`     | no       | `./data/memory.json`                                   | JSON memory file path (`/tmp/...` for Render)      |
 
 ---
 
@@ -105,7 +106,7 @@ npm run inspect     # prints MCP Inspector command
 
 ## Try the demo
 
-Open the [Voice Shop Assistant simulator](https://annzar-voice-shop-mcp.onrender.com/demo) on a phone or desktop. Speak with the microphone in a browser that supports the Web Speech API, or type a request instead. The simulator uses mock shop data and can summarize sales, search products, create a demo product, draft a promotional post, retrieve a checkout link, and show remembered context. Checkout links use the `/demo-checkout/` path and are labeled “Demo link (mock shop)”; they are not a real checkout and do not process orders. The simulator does not publish posts or place orders.
+Open the [Voice Shop Assistant simulator](https://annzar-voice-shop-mcp.onrender.com/demo) on a phone or desktop. Speak with the microphone in a browser that supports the Web Speech API, or type a request instead. The simulator uses mock shop data and can summarize sales, search products, create a demo product, draft a promotional post, retrieve a checkout link, and show remembered context. Mock checkout URLs use `PUBLIC_BASE_URL` (default `https://annzar-voice-shop-mcp.onrender.com`) and open the server's `/demo-checkout/:id` noindex page. That page clearly states that no payment is taken and that real checkout behavior depends on the real Annzar adapter. The simulator does not publish posts or place orders.
 
 ### Example calls
 
@@ -155,6 +156,7 @@ curl -s -X POST http://localhost:$PORT/mcp \
 5. Under **Environment Variables**, set:
    - `MCP_API_KEY` → a strong random string (e.g. `openssl rand -hex 32`)
    - `SHOP_ADAPTER` → `mock` (for demo) or `annzar` (when real adapter is ready)
+   - `PUBLIC_BASE_URL` → the service's public origin, e.g. `https://annzar-voice-shop-mcp.onrender.com` (used for mock checkout URLs)
    - `MEMORY_PATH` is pre-set to `/tmp/memory.json` in `render.yaml` — leave it.
 6. Click **Deploy**. Watch the build log for the startup banner showing adapter and MCP spec version.
 7. Test the deployed service:
