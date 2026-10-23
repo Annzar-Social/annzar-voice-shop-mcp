@@ -83,9 +83,9 @@ npm start                   # node dist/server.js
 npm run build       # tsc — Render build command
 npm start           # node dist/server.js — Render start command
 npm run dev         # tsx watch (hot-reload for development)
-npm test            # unit tests (28 tests, no server needed)
-npm run test:integration  # integration tests against real server
-npm run test:all    # both test suites
+npm test            # unit tests (37 tests, no server needed)
+npm run test:integration  # integration tests against real server (7 tests)
+npm run test:all    # both test suites (44 tests)
 npm run typecheck   # tsc --noEmit (may be slow locally — see FRICTION_LOG)
 npm run inspect     # prints MCP Inspector command
 ```
