@@ -46,6 +46,22 @@ function jsonrpc(method: string, params: unknown, id: number) {
   return JSON.stringify({ jsonrpc: '2.0', method, params, id })
 }
 
+describe('proxy-aware demo rate limit', () => {
+  it('trusts one proxy hop and maintains separate 20/minute limits per forwarded client IP', async () => {
+    expect(app.get('trust proxy')).toBe(1)
+    const request = (ip: string) => fetch(`${base}/api/demo/command`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
+      body: JSON.stringify({ sentence: 'hello', sessionId: 'proxy-test' }),
+    })
+    let response: Response | undefined
+    for (let i = 0; i < 20; i++) response = await request('198.51.100.31')
+    expect(response?.status).toBe(200)
+    expect((await request('198.51.100.31')).status).toBe(429)
+    expect((await request('198.51.100.32')).status).toBe(200)
+  })
+})
+
 // 4a) GET /health — public, no token needed
 describe('4a) GET /health (public)', () => {
   it('returns 200 with status ok', async () => {

@@ -19,11 +19,11 @@ export function registerTools(server: McpServer, adapter: ShopAdapter, memory: M
 
   server.tool('search_products',
     'Search the shop catalog by keyword, with optional max price (USD) and category filters.',
-    { query: z.string().min(1).describe('Search keyword'), max_price: z.number().positive().optional().describe('Max price in USD'), category: z.string().optional().describe('Category name') },
+    { query: z.string().describe('Search keyword; empty returns all products subject to other filters'), max_price: z.number().positive().optional().describe('Max price in USD'), category: z.string().optional().describe('Category name') },
     async ({ query, max_price, category }) => {
       const results = await adapter.searchProducts(query, max_price, category)
       const ctx = memory.get(DEFAULT_SELLER)
-      memory.update(DEFAULT_SELLER, { lastAction: 'search_products', recentQueries: [...ctx.recentQueries, query] })
+      memory.update(DEFAULT_SELLER, { lastAction: 'search_products', recentQueries: query ? [...ctx.recentQueries, query] : ctx.recentQueries })
       return { content: [{ type: 'text', text: JSON.stringify({ query, count: results.length, products: results.map(p => ({ id: p.id, name: p.name, price_usd: p.price, category: p.category, description: p.description })) }, null, 2) }] }
     })
 
