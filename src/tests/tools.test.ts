@@ -84,10 +84,27 @@ describe('MockShopAdapter', () => {
   })
 
   describe('getCheckoutLink', () => {
-    it('URL contains product ID', async () => {
-      const l = await adapter.getCheckoutLink('prod_001')
-      expect(l.url).toContain('prod_001')
-      expect(l.url).toBe('https://annzar.com/demo-checkout/prod_001?utm_source=voice&utm_medium=mcp')
+    it('uses the default public base URL when PUBLIC_BASE_URL is unset', async () => {
+      const previous = process.env.PUBLIC_BASE_URL
+      delete process.env.PUBLIC_BASE_URL
+      try {
+        const l = await adapter.getCheckoutLink('prod_001')
+        expect(l.url).toBe('https://annzar-voice-shop-mcp.onrender.com/demo-checkout/prod_001?utm_source=voice&utm_medium=mcp')
+      } finally {
+        if (previous === undefined) delete process.env.PUBLIC_BASE_URL
+        else process.env.PUBLIC_BASE_URL = previous
+      }
+    })
+    it('uses PUBLIC_BASE_URL and removes a trailing slash', async () => {
+      const previous = process.env.PUBLIC_BASE_URL
+      process.env.PUBLIC_BASE_URL = 'https://shop.example.test/'
+      try {
+        const l = await adapter.getCheckoutLink('prod_001')
+        expect(l.url).toBe('https://shop.example.test/demo-checkout/prod_001?utm_source=voice&utm_medium=mcp')
+      } finally {
+        if (previous === undefined) delete process.env.PUBLIC_BASE_URL
+        else process.env.PUBLIC_BASE_URL = previous
+      }
     })
     it('throws for unknown product', async () => {
       await expect(adapter.getCheckoutLink('bad')).rejects.toThrow()

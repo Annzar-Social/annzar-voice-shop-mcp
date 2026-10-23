@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createServer, type Server } from 'node:http'
 import { AddressInfo } from 'node:net'
+import { MockShopAdapter } from '../adapters/MockShopAdapter.js'
 
 // Set env before importing server so dotenv doesn't override these
 process.env.MCP_API_KEY   = 'integration-test-key'
@@ -45,6 +46,51 @@ const HEADERS_VALID    = { ...HEADERS_NO_AUTH, 'Authorization': 'Bearer integrat
 function jsonrpc(method: string, params: unknown, id: number) {
   return JSON.stringify({ jsonrpc: '2.0', method, params, id })
 }
+
+describe('GET /demo-checkout/:id', () => {
+  it('returns the mock product and noindex checkout page for a valid product id', async () => {
+    const response = await fetch(`${base}/demo-checkout/prod_001`)
+    const html = await response.text()
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('text/html')
+    expect(html).toContain('<meta name="robots" content="noindex">')
+    expect(html).toContain('Demo checkout (mock shop)')
+    expect(html).toContain('Minimal UI Kit')
+    expect(html).toContain('Design')
+    expect(html).toContain('$29.00')
+    expect(html).toContain('This is a demo checkout page. No payment is taken. With the real Annzar adapter this link points to the product\'s real checkout.')
+    expect(html).toContain('href="/demo">Back to the demo</a>')
+  })
+
+  it('returns a generic demo product for a well-formed id absent from the catalog', async () => {
+    const response = await fetch(`${base}/demo-checkout/prod_999`)
+    const html = await response.text()
+    expect(response.status).toBe(200)
+    expect(html).toContain('<h2>Demo product</h2>')
+    expect(html).not.toContain('$0.00')
+  })
+
+  it('returns 404 for an id that does not match the product-id format without reflecting it', async () => {
+    const response = await fetch(`${base}/demo-checkout/abc`)
+    const body = await response.text()
+    expect(response.status).toBe(404)
+    expect(body).toBe('Not found')
+    expect(body).not.toContain('abc')
+  })
+
+  it('HTML-escapes untrusted product names and categories', async () => {
+    const unsafeName = 'Kit <script>alert("x")</script> & bundle'
+    const unsafeCategory = 'Design & <img src=x onerror=alert(1)>'
+    const { product } = await new MockShopAdapter().createProduct(unsafeName, 8.5, 'ignored', unsafeCategory, true)
+    const response = await fetch(`${base}/demo-checkout/${product.id}`)
+    const html = await response.text()
+    expect(response.status).toBe(200)
+    expect(html).toContain('Kit &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; bundle')
+    expect(html).toContain('Design &amp; &lt;img src=x onerror=alert(1)&gt;')
+    expect(html).not.toContain('<script>alert')
+    expect(html).not.toContain('<img src=x')
+  })
+})
 
 describe('proxy-aware demo rate limit', () => {
   it('trusts one proxy hop and maintains separate 20/minute limits per forwarded client IP', async () => {
